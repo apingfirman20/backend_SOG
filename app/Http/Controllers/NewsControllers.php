@@ -15,99 +15,96 @@ use Illuminate\Support\Facades\Storage;
 class NewsControllers extends Controller
 {
     public function index()
-    {
-          $news = News::with('media')->get();
-             return response()->json($news);
+    { $news = News::with('mediaFiles', 'comments')->get();
+
+    return response()->json($news);
+
     }
-    public function store(Request $request)
-    {
-          $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'deskripsi' => 'required|string',
-            'company' => 'required|string|max:255',
-            'file' => 'file|mimes:jpg,jpeg,png,mp4|max:5120', // max 5MB
-        ]);
-
-        // Simpan file ke storage
-        $file = $request->file('file');
-        $path = $file->store('media', 'public');
-
-        // Simpan data media ke tabel media_files
-        $media = MediaFile::create([
-            'user_id' => 1, // atau pakai auth()->id() kalau login
-            'filename' => $file->getClientOriginalName(),
-            'file_path' => $path,
-            'type' => str_contains($file->getMimeType(), 'image') ? 'image' : 'video',
-        ]);
-
-        // Simpan berita dan relasikan ke media
-        $news = News::create([
-            'title' => $validated['title'],
-            'deskripsi' => $validated['deskripsi'],
-            'company' => $validated['company'],
-            'media_id' => $media->id,
-        ]);
-
-        return response()->json([
-            'message' => 'Berita dan file berhasil disimpan',
-            'data' => $news->load('media'),
-        ], 201);
-    }
-
-    public function updateNews(Request $request, $id)
-    {
-         $news = News::find($id);
-    if (!$news) {
-        return response()->json(['message' => 'News not found'], 404);
-    }
-
-    $validator = Validator::make($request->all(), [
-        'title' => 'sometimes|string|max:255',
-        'deskripsi' => 'sometimes|string',
-        'company' => 'sometimes|string|max:255',
-        'media.*' => 'file|max:10240',
-        'user_id' => 'required|integer',
+  public function store(Request $request)
+{
+    $validated = $request->validate([
+        'title' => 'required|string|max:255',
+        'deskripsi' => 'required|string',
+        'company' => 'required|string',
+        'media.*' => 'nullable|file|mimes:jpg,jpeg,png,mp4,mov,avi|max:20480',
     ]);
 
-    if ($validator->fails()) {
-        return response()->json(['errors' => $validator->errors()], 422);
-    }
 
-    // Update data artikel
-    $news->update($request->only(['title', 'description', 'company']));
+    $news = News::create([
+        'title' => $validated['title'],
+        'deskripsi' => $validated['deskripsi'],
+        'company' => $validated['company'],
+    ]);
 
-    $updatedFiles = [];
 
-    // Jika ada file baru
     if ($request->hasFile('media')) {
         foreach ($request->file('media') as $file) {
-            $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
-            $extension = $file->getClientOriginalExtension();
-            $date = Carbon::now()->format('Ymd_His');
+            $path = $file->store('uploads/news', 'public');
 
-            $newFileName = "{$request->user_id}_{$originalName}_{$date}.{$extension}";
-            $path = $file->storeAs("news_media/{$news->id}", $newFileName, 'public');
+            $type = str_starts_with($file->getMimeType(), 'image') ? 'image' : 'video';
 
-            $type = in_array(strtolower($extension), ['mp4', 'mov', 'avi']) ? 'video' : 'image';
-
-            // Simpan ke DB
-            $media = MediaFile::create([
-                'user_id' => $request->user_id,
-                'filename' => $newFileName,
+            MediaFile::create([
+                'news_id' => $news->id,   // ini penting! 🔥
+                'filename' => $file->getClientOriginalName(),
                 'file_path' => $path,
                 'type' => $type,
             ]);
-
-            $updatedFiles[] = $media;
         }
     }
 
-    return response()->json([
-        'message' => 'News updated successfully',
-        'data' => $news,
-        'new_files' => $updatedFiles
+    return response()->json(['message' => 'News created successfully', 'data' => $news]);
+}
+
+
+  public function update(Request $request, $id)
+{
+    $news = News::findOrFail($id);
+
+    // Validasi input
+    $validated = $request->validate([
+        'title' => 'required|string|max:255',
+        'deskripsi' => 'required|string',
+        'company' => 'required|string|max:255',
+        'media.*' => 'nullable|file|mimes:jpg,jpeg,png,mp4,mov,avi|max:20480',
     ]);
+
+    // Update data utama
+    $news->update([
+        'title' => $validated['title'],
+        'deskripsi' => $validated['deskripsi'],
+        'company' => $validated['company'],
+    ]);
+
+    // Jika ada file baru, tambahkan
+    if ($request->hasFile('media')) {
+        foreach ($request->file('media') as $file) {
+            // Simpan di folder yang sama seperti store()
+            $path = $file->store('uploads/news', 'public');
+
+            // Tentukan jenis media
+            $type = str_starts_with($file->getMimeType(), 'image') ? 'image' : 'video';
+
+            // Simpan ke DB
+            MediaFile::create([
+                'news_id' => $news->id,
+                'filename' => $file->getClientOriginalName(),
+                'file_path' => $path,
+                'type' => $type,
+            ]);
+        }
     }
+
+    // Muat ulang relasi media agar frontend langsung dapat data terbaru
+    $news->load('mediaFiles');
+
+    // Kembalikan response JSON
+    return response()->json([
+        'message' => 'Berhasil update data berita',
+        'data' => $news,
+    ]);
+}
+
+
 
     public function deleteNews($id)
     {

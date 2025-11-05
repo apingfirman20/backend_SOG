@@ -9,13 +9,15 @@ use Illuminate\Database\Eloquent\Model;
 class MediaFile extends Model
 {
         use HasFactory;
-         public function news()
-    {
-        return $this->hasMany(News::class);
-    }
+public function news()
+{
+    return $this->belongsTo(News::class, 'news_id');
+}
+
+
 
     protected $fillable = [
-        'user_id',
+        'news_id',
         'filename',
         'file_path',
         'type',

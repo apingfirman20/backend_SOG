@@ -14,8 +14,10 @@ return new class extends Migration
         Schema::create('career', function (Blueprint $table) {
             $table->id();
             $table->string('position'); 
-            $table->integer('company');
+            $table->string('company');
             $table->string('salary');
+            $table->string('location');
+            $table->string('link');
             $table->date('update_date');
             $table->timestamps();
 

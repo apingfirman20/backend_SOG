@@ -8,10 +8,17 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 class News extends Model
 {
     use HasFactory;
-    public function media()
-    {
-        return $this->belongsTo(MediaFile::class, 'media_id');
-    }
+    public function mediaFiles()
+{
+    return $this->hasMany(MediaFile::class, 'news_id');
+}
+public function comments()
+{
+    return $this->hasMany(Coments::class, 'news_id');
+}
+
+
+
 
     protected $fillable = [
         'title',

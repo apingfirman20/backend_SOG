@@ -15,7 +15,6 @@ return new class extends Migration
             $table->id();
             $table->foreignId('news_id')->constrained()->onDelete('cascade');
             $table->string('name');
-            $table->string('email')->nullable();
             $table->text('comment');
             $table->timestamps();
 

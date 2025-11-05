@@ -13,10 +13,10 @@ return new class extends Migration
     {
         Schema::create('media_files', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('user_id');
+            $table->foreignId('news_id')->constrained('news')->onDelete('cascade');
             $table->string('filename');
             $table->string('file_path');
-            $table->string('type')->nullable(); // image / video
+            $table->string('type')->nullable();
             $table->timestamps();
                 });
     }

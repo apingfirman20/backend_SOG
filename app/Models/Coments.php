@@ -9,10 +9,10 @@ class Coments extends Model
 {
     use HasFactory;
 
+    protected $table = 'coments';
     protected $fillable = [
         'news_id',
         'name',
-        'email',
         'comment',
     ];
 

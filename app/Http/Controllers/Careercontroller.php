@@ -19,11 +19,15 @@ class Careercontroller extends Controller
             'position' => 'required|string|max:255',
             'company' => 'required|string|max:255',
             'salary' => 'required|string|max:100',
-            'update_date' => 'required|date',
+            'location' => 'required|string|max:255',
+            'link' => 'required|string|max:255',
+            
         ]);
 
         $career = Career::create($validated);
-
+        $career->update_date = now();
+        $career->save();
+        
         return response()->json([
             'message' => 'Career entry created successfully!',
             'data' => $career
@@ -41,15 +45,21 @@ class Careercontroller extends Controller
             'position' => 'sometimes|required|string|max:255',
             'company' => 'sometimes|required|string|max:255',
             'salary' => 'sometimes|required|string|max:100',
-            'update_date' => 'sometimes|required|date',
+            'location' => 'sometimes|required|string|max:255',
+            'link' => 'sometimes|required|string|max:255',
+            
         ]);
 
-        $career->update($validated);
 
+        $career->update($validated);
+        $career->update_date = now();
+        $career->save();
         return response()->json([
             'message' => 'Career entry updated successfully!',
             'data' => $career
         ]);
+
+
     }
 
     public function destroy($id)
